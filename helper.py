@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
-
+from collections import defaultdict
+import numpy as np
 
 def viz_time_series(data, labels=None):
     x = []
     y = []
     c = []
     i = 0
-    for k, v in data.items():
+    for _, v in data.items():
         for t in v:
             x.append(t)
             y.append(i)
@@ -23,14 +24,52 @@ def viz_time_series(data, labels=None):
     plt.rcParams["figure.figsize"] = (20, 20)
     plt.show()
 
+def average_classification_uncertainty(em_clusterer):
+    pred_labels = em_clusterer.classify()
+    avg_uncertainty = defaultdict(lambda : [])
+    
+    for i in range(len(pred_labels)):
+        avg_uncertainty[pred_labels[i]].append(1 - np.max(em_clusterer.z[i, :]))
+         
+    
+    for k, v in avg_uncertainty.items():
+        avg_uncertainty[k] = sum(v) / len(v)
+    
+    return avg_uncertainty
 
-def hist_times_across_data(data):
-    all_times = []
+
+def bot_proportion_per_cluster(ids, pred_labels, bot_labels_df):
+    bot_count_by_label = defaultdict(lambda : 0)
+    total_count_by_label = defaultdict(lambda : 0)
+    
+    for i in range(len(pred_labels)):
+        total_count_by_label[pred_labels[i]] += 1
+        
+        if (bot_labels_df[bot_labels_df['id'] == ids[i]]['label'] == 'bot').all():
+            bot_count_by_label[pred_labels[i]] += 1
+        
+    ret_lst = []
+    for k, v in bot_count_by_label.items():
+        ret_lst.append(v / total_count_by_label[k])
+        
+    return ret_lst, total_count_by_label
+
+def first_event_time(data):
+    earliest_per_acc = []
+    for _, v in data.items():
+        earliest_per_acc.append(min(v))
+
+    return min(earliest_per_acc)
+
+def normalize_data(data, T):
+    time_zero = first_event_time(data)
     for k, v in data.items():
-        all_times += v
+        norm_lst = []
 
-    plt.hist(all_times)
-    plt.xlabel("Normalized Time")
-    plt.ylabel("Frequency")
-    plt.rcParams["figure.figsize"] = (10, 10)
-    plt.show()
+        for t in v:
+            norm_lst.append(t - time_zero)
+
+        norm_lst.sort()
+        data[k] = norm_lst
+
+    return data, T - time_zero

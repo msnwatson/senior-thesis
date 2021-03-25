@@ -1,9 +1,9 @@
 from tick import hawkes
 import numpy as np
-import em_alg
+from timemclust.em_alg import EMClusterer
+from timemclust.exponential_hawkes import ExpHawkesProcess
 
-
-def two_cluster_sim_experiment(n_obs, time_series_len, p, a1, a2, b1, b2, mu1, mu2, run_time=100):
+def two_cluster_sim_data_exp(n_obs, time_series_len, p, a1, a2, b1, b2, mu1, mu2, run_time=100):
 
     # Define kernels
     h1_kernel = hawkes.HawkesKernelExp(a1, a2)
@@ -14,6 +14,7 @@ def two_cluster_sim_experiment(n_obs, time_series_len, p, a1, a2, b1, b2, mu1, m
 
     coin_flips = np.random.binomial(1, p, n_obs)
     i = 0
+    
     for coin_flip in coin_flips:
         if coin_flip == 0:
             h1_simulator = hawkes.SimuHawkes(end_time=run_time, verbose=False, kernels=[[h1_kernel]],
@@ -44,8 +45,8 @@ def two_cluster_sim_experiment(n_obs, time_series_len, p, a1, a2, b1, b2, mu1, m
 def perform_tau_diff_exp(taus, sim_data, num_steps=100):
     tau_lst = []
 
-    hawkes_exp_process = em_alg.ExpHawkesProcess()
-    em_clusterer = em_alg.EMClusterer(
+    hawkes_exp_process = ExpHawkesProcess()
+    em_clusterer = EMClusterer(
         sim_data, 2, 0, hawkes_exp_process, 100, tau=taus)
     tau_lst.append(em_clusterer.tau)
 
